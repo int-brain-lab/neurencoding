@@ -1,0 +1,36 @@
+[tool.isort]
+known_first_party = ["ibllib", "iblutil", "one", "brainbox"]
+known_local_folder = ["neurencoding"]
+import_heading_stdlib = "Standard library"
+import_heading_thirdparty = "Third party libraries"
+import_heading_firstparty = "IBL libraries"
+import_heading_localfolder = "Neurencoding repo imports"
+
+[tool.yapf]
+based_on_style = "google"
+column_limit = 99
+split_before_dot = true
+
+[tool.poetry]
+name = "neurencoding"
+version = "0.1.0"
+description = "Encoding models for single recorded units in the brain"
+authors = ["Berk Gercek <berkgercek@duck.com>"]
+license = "mit"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+numpy = "^1.22.2"
+scipy = "^1.8.0"
+pandas = "^1.4.1"
+numba = "^0.55.1"
+scikit-learn = "^1.0.2"
+tqdm = "^4.62.3"
+
+[tool.poetry.dev-dependencies]
+isort = "^5.10.1"
+yapf = "^0.32.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
