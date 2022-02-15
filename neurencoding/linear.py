@@ -1,22 +1,22 @@
-
-"""
-GLM fitting utilities based on NeuroGLM by Il Memming Park, Jonathan Pillow:
-
-https://github.com/pillowlab/neuroGLM
-
-Berk Gercek
-International Brain Lab, 2020
-"""
+# Third party libraries
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, MetaEstimatorMixin
 from sklearn.linear_model import LinearRegression
+
+# Neurencoding repo imports
 from .neural_model import NeuralModel
 
 
 class LinearGLM(NeuralModel):
-    def __init__(self, design_matrix, spk_times, spk_clu,
-                 binwidth=0.02, metric='rsq', estimator=None,
+
+    def __init__(self,
+                 design_matrix,
+                 spk_times,
+                 spk_clu,
+                 binwidth=0.02,
+                 metric='rsq',
+                 estimator=None,
                  mintrials=100):
         """
         Fit a linear model using a DesignMatrix object and spike data. Can use ridge regression
@@ -47,8 +47,7 @@ class LinearGLM(NeuralModel):
             Minimum number of trials in which a neuron must fire >0 spikes to be considered for
             fitting, by default 100
         """
-        super().__init__(design_matrix, spk_times, spk_clu,
-                         binwidth, mintrials)
+        super().__init__(design_matrix, spk_times, spk_clu, binwidth, mintrials)
         if estimator is None:
             estimator = LinearRegression()
         if not isinstance(estimator, BaseEstimator):

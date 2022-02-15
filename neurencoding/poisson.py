@@ -1,16 +1,27 @@
-from .neural_model import NeuralModel
+# Standard library
+from warnings import catch_warnings, warn
 
-from warnings import warn, catch_warnings
+# Third party libraries
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import PoissonRegressor
 from tqdm import tqdm
 
+# Neurencoding repo imports
+from .neural_model import NeuralModel
+
 
 class PoissonGLM(NeuralModel):
-    def __init__(self, design_matrix, spk_times, spk_clu,
-                 binwidth=0.02, metric='dsq', fit_intercept=True, alpha=0,
-                 train=0.8, blocktrain=False, mintrials=100, subset=False):
+
+    def __init__(self,
+                 design_matrix,
+                 spk_times,
+                 spk_clu,
+                 binwidth=0.02,
+                 metric='dsq',
+                 fit_intercept=True,
+                 alpha=0,
+                 mintrials=100):
         """
         Fit a poisson model using a DesignMatrix and spiking rate.
         Uses the sklearn.linear_model.PoissonRegressor to perform fitting.
@@ -39,8 +50,7 @@ class PoissonGLM(NeuralModel):
             Minimum number of trials in which a unit must fire at least one spike in order to be
             included in the fitting, by default 100
         """
-        super().__init__(design_matrix, spk_times, spk_clu,
-                         binwidth, mintrials)
+        super().__init__(design_matrix, spk_times, spk_clu, binwidth, mintrials)
         # TODO: Implement grid search over alphas to find optimal value
         self.metric = metric
         self.fit_intercept = fit_intercept

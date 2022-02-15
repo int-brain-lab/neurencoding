@@ -1,8 +1,11 @@
+# Standard library
 from warnings import warn
+
+# Third party libraries
+import numba as nb
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-import numba as nb
 
 
 class DesignMatrix:
@@ -25,7 +28,7 @@ class DesignMatrix:
         ----------
         trialsdf : pandas.DataFrame
             Dataframe in which each row is a trial, and each column is a trial-by-trial covariate.
-            This includes, optionally, continuous covariates like eye-position and wheel movement
+            This includes, optionally, continuous covariates like eye position and wheel movement
             per trial, which can be used with object-datatype dataframes. The length of vectors
             stored in continuous-variable columns must match the length of the trial.
 
@@ -99,8 +102,14 @@ class DesignMatrix:
         """
         return np.ceil(t / self.binwidth).astype(int)
 
-    def add_covariate_timing(self, covlabel, eventname, bases,
-                             offset=0, deltaval=None, cond=None, desc=''):
+    def add_covariate_timing(self,
+                             covlabel,
+                             eventname,
+                             bases,
+                             offset=0,
+                             deltaval=None,
+                             cond=None,
+                             desc=''):
         """
         Convenience wrapper for adding timing event regressors to the design matrix.
 
@@ -170,8 +179,7 @@ class DesignMatrix:
         self.add_covariate(covlabel, regressor, bases, offset, cond, desc)
         return
 
-    def add_covariate_boxcar(self, covlabel, boxstart, boxend,
-                             cond=None, height=None, desc=''):
+    def add_covariate_boxcar(self, covlabel, boxstart, boxend, cond=None, height=None, desc=''):
         """
         Convenience wrapped on add_covariate to add a boxcar covariate on the given start and end
         variables, such that the covariate is a step function with non-zero value between those
@@ -233,8 +241,7 @@ class DesignMatrix:
         self.add_covariate(covlabel, regressor, None, cond, desc)
         return
 
-    def add_covariate_raw(self, covlabel, raw,
-                          cond=None, desc=''):
+    def add_covariate_raw(self, covlabel, raw, cond=None, desc=''):
         """
         Convenience wrapper to add a 'raw' covariate, that is to say a covariate which is a
         continuous value that changes with time during the course of a trial.
@@ -264,7 +271,7 @@ class DesignMatrix:
             covseries = self.trialsdf[raw]
             if np.any(covseries.apply(len) != stimlens):
                 raise IndexError(f'Some array shapes in {raw} do not match binned duration.')
-            self.add_covariate(covlabel, covseries, None, cond=cond)
+            self.add_covariate(covlabel, covseries, None, cond=cond, desc=desc)
 
         if callable(raw):
             try:
@@ -274,17 +281,16 @@ class DesignMatrix:
                                 'Make sure that the function passed takes in rows of trialsdf.')
             if np.any(covseries.apply(len) != stimlens):
                 raise IndexError(f'Some array shapes in {raw} do not match binned duration.')
-            self.add_covariate(covlabel, covseries, None, cond=cond)
+            self.add_covariate(covlabel, covseries, None, cond=cond, desc=desc)
 
         if isinstance(raw, pd.Series):
             if np.any(raw.index != self.trialsdf.index):
                 raise IndexError('Indices of raw do not match indices of trialsdf.')
             if np.any(raw.apply(len) != stimlens):
                 raise IndexError(f'Some array shapes in {raw} do not match binned duration.')
-            self.add_covariate(covlabel, raw, None, cond=cond)
+            self.add_covariate(covlabel, raw, None, cond=cond, desc=desc)
 
-    def add_covariate(self, covlabel, regressor, bases,
-                      offset=0, cond=None, desc=''):
+    def add_covariate(self, covlabel, regressor, bases, offset=0, cond=None, desc=''):
         """
         Parent function to add covariates to model object. Takes a regressor in the form of a
         pandas Series object, a T x M array of M bases, and stores them for use in the design
@@ -336,13 +342,21 @@ class DesignMatrix:
         if not all(regressor.index == self.trialsdf.index):
             raise IndexError('Indices of regressor and trials dataframes do not match.')
 
-        cov = {'description': desc,
-               'bases': bases,
-               'valid_trials': cond if cond is not None else self.trialsdf.index,
-               'offset': offset,
-               'regressor': regressor,
-               'dmcol_idx': np.arange(self.currcol, self.currcol + bases.shape[1])
-               if bases is not None else self.currcol}
+        cov = {
+            'description':
+                desc,
+            'bases':
+                bases,
+            'valid_trials':
+                cond if cond is not None else self.trialsdf.index,
+            'offset':
+                offset,
+            'regressor':
+                regressor,
+            'dmcol_idx':
+                np.arange(self.currcol, self.currcol +
+                          bases.shape[1]) if bases is not None else self.currcol
+        }
         if bases is None:
             self.currcol += 1
         else:
@@ -429,7 +443,7 @@ def denseconv(X, bases):
         A = np.zeros((T + TB - 1, int(np.sum(indices[kCov, :]))))
         for i, j in enumerate(np.argwhere(indices[kCov, :]).flat):
             A[:, i] = np.convolve(X[:, kCov], bases[:, j])
-        BX[:, k: sI[kCov]] = A[:T, :]
+        BX[:, k:sI[kCov]] = A[:T, :]
         k = sI[kCov]
     return BX
 

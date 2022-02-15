@@ -1,7 +1,8 @@
+# Third party libraries
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 from numpy.matlib import repmat
+from tqdm import tqdm
 
 
 def raised_cosine(duration, nbases, binfun):
@@ -98,6 +99,7 @@ def bincount2D(x, y, xbin=0, ybin=0, xlim=None, ylim=None, weights=None):
 
 
 class SequentialSelector:
+
     def __init__(self, model, n_features_to_select=None, direction='forward', scoring=None):
         """
         Sequential feature selection for neural models
@@ -150,10 +152,8 @@ class SequentialSelector:
             raise ValueError('n_features_to_select is not a valid number in the context'
                              ' of the model.')
 
-        n_iterations = (
-            self.n_features_to_select if self.direction == 'forward'
-            else n_features - self.n_features_to_select
-        )
+        n_iterations = (self.n_features_to_select if self.direction == 'forward' else n_features -
+                        self.n_features_to_select)
         for i in tqdm(range(n_iterations), desc='step', leave=False, disable=not progress):
             masks_set = maskdf.groupby(self.features.tolist()).groups
             for current_mask in tqdm(masks_set, desc='feature subset', leave=False):
@@ -184,6 +184,6 @@ class SequentialSelector:
             coefs, intercepts = self.model._fit(mdm, my, cells=cells)
             for i, cell in enumerate(cells):
                 scores.at[cell, feature_idx] = self.model._scorer(coefs.loc[cell],
-                                                                  intercepts.loc[cell],
-                                                                  mdm, my[:, i])
+                                                                  intercepts.loc[cell], mdm, my[:,
+                                                                                                i])
         return scores.idxmax(axis=1), scores.max(axis=1)

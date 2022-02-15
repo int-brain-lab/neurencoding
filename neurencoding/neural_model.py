@@ -1,17 +1,11 @@
-
-"""
-GLM fitting utilities based on NeuroGLM by Il Memming Park, Jonathan Pillow:
-
-https://github.com/pillowlab/neuroGLM
-
-Berk Gercek
-International Brain Lab, 2020
-"""
+# Third party libraries
 import numpy as np
 import pandas as pd
-from sklearn.metrics import r2_score
 from scipy.special import xlogy
-from .utils import neglog, bincount2D
+from sklearn.metrics import r2_score
+
+# Neurencoding repo imports
+from .utils import bincount2D, neglog
 
 
 class NeuralModel:
@@ -21,8 +15,13 @@ class NeuralModel:
     being used makes sense.
     """
 
-    def __init__(self, design_matrix, spk_times, spk_clu,
-                 binwidth=0.02, mintrials=100, stepwise=False):
+    def __init__(self,
+                 design_matrix,
+                 spk_times,
+                 spk_clu,
+                 binwidth=0.02,
+                 mintrials=100,
+                 stepwise=False):
         """
         Construct GLM object using information about all trials, and the relevant spike times.
         Only ingests data, and further object methods must be called to describe kernels, gain
@@ -100,8 +99,8 @@ class NeuralModel:
                 continue
             spks = self.spikes[i]
             clu = self.clu[i]
-            arr = bincount2D(spks, clu,
-                             xbin=self.binwidth, ybin=self.clu_ids, xlim=[0, duration])[0]
+            arr = bincount2D(spks, clu, xbin=self.binwidth, ybin=self.clu_ids, xlim=[0,
+                                                                                     duration])[0]
             arrdiffs.append(arr.shape[1] - self.binf(duration))
             spkarrs.append(arr.T)
         y = np.vstack(spkarrs)
@@ -151,7 +150,7 @@ class NeuralModel:
                 full_deviance = 2 * np.sum(xlogy(y, y / pred.flat) - y + pred.flat)
             return 1 - (full_deviance / null_deviance)
         elif self.metric == 'msespike':
-            residuals = (y - pred) ** 2
+            residuals = (y - pred)**2
             return residuals.sum() / y.sum()
         elif self.metric == 'rsq':
             return r2_score(y, pred)
