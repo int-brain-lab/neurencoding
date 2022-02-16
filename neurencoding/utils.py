@@ -106,8 +106,8 @@ class SequentialSelector:
 
         Parameters
         ----------
-        model : brainbox.modeling.neural_model.NeuralModel
-            Any class which inherits NeuralModel and has already been instantiated.
+        model : brainbox.modeling.neural_model.EphysModel
+            Any class which inherits EphysModel and has already been instantiated.
         n_features_to_select : int, optional
             Number of covariates to select. When None, will sequentially fit all parameters and
             store the associated scores. By default None
@@ -116,7 +116,7 @@ class SequentialSelector:
             regressor up, while 'backward' indicates regrssors will be removed one at a time until
             n_features_to_select is reached or 1 regressor remains. By default 'forward'
         scoring : str, optional
-            Scoring function to use. Must be a valid argument to the subclass of NeuralModel passed
+            Scoring function to use. Must be a valid argument to the subclass of EphysModel passed
             to SequentialSelector. By default None
         """
         self.model = model

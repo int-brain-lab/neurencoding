@@ -5,10 +5,10 @@ from sklearn.base import BaseEstimator, MetaEstimatorMixin
 from sklearn.linear_model import LinearRegression
 
 # Neurencoding repo imports
-from .neural_model import NeuralModel
+from ._models import EphysModel
 
 
-class LinearGLM(NeuralModel):
+class LinearGLM(EphysModel):
 
     def __init__(self,
                  design_matrix,
@@ -59,7 +59,7 @@ class LinearGLM(NeuralModel):
 
     def _fit(self, dm, binned, cells=None):
         """
-        Fitting primitive that brainbox.NeuralModel.fit method will call
+        Fitting primitive that brainbox.EphysModel.fit method will call
 
         Parameters
         ----------

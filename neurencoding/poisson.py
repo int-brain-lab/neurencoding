@@ -8,10 +8,10 @@ from sklearn.linear_model import PoissonRegressor
 from tqdm import tqdm
 
 # Neurencoding repo imports
-from .neural_model import NeuralModel
+from ._models import EphysModel
 
 
-class PoissonGLM(NeuralModel):
+class PoissonGLM(EphysModel):
 
     def __init__(self,
                  design_matrix,

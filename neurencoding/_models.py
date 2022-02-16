@@ -8,7 +8,7 @@ from sklearn.metrics import r2_score
 from .utils import bincount2D, neglog
 
 
-class NeuralModel:
+class EphysModel:
     """
     Parent class for multiple types of neural models. Contains core methods for extracting
     trial-relevant spike times and binning spikes, as well as making sure that the design matrix

@@ -1,11 +1,13 @@
 # Standard library
-from warnings import warn
+import logging
 
 # Third party libraries
 import numba as nb
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
+
+_logger = logging.getLogger('neurencoding')
 
 
 class DesignMatrix:
@@ -57,7 +59,6 @@ class DesignMatrix:
         # Filter out cells which don't meet the criteria for minimum spiking, while doing trial
         # assignment
         vartypes['duration'] = 'value'
-        base_df = trialsdf.copy()
         trialsdf = trialsdf.copy()  # Make sure we don't modify the original dataframe
         trbounds = trialsdf[['trial_start', 'trial_end']]  # Get the start/end of trials
         # Empty trial duration value to use later
@@ -67,7 +68,7 @@ class DesignMatrix:
 
         for i, (start, end) in trbounds.iterrows():
             if any(np.isnan((start, end))):
-                warn(f"NaN values found in trial start or end at trial number {i}. "
+                _logger.warning(f"NaN values found in trial start or end at trial number {i}. "
                      "Discarding trial.")
                 trialsdf.drop(i, inplace=True)
                 continue
@@ -82,7 +83,6 @@ class DesignMatrix:
         self.covar = {}
         self.trialsdf = trialsdf
         self.vartypes = vartypes
-        self.base_df = base_df
         self.compiled = False
         return
 
@@ -410,8 +410,6 @@ class DesignMatrix:
         else:
             dm = sp.vstack(miniDMs).to_csc()
         trlabels = np.vstack(rowtrials)
-        if hasattr(self, 'binnedspikes'):
-            assert self.binnedspikes.shape[0] == dm.shape[0], "Oh shit. Indexing error."
         self.dm = dm
         self.trlabels = trlabels
         self.compiled = True
@@ -424,8 +422,9 @@ class DesignMatrix:
 
     def _compile_check(self):
         if self.compiled:
-            warn('Design matrix was already compiled once. Be sure to compile again if adding'
-                 ' additional covariates.')
+            _logger.warning(
+                'Design matrix was already compiled once. Be sure to compile again if adding'
+                ' additional covariates.')
         return
 
 
