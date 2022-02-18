@@ -24,11 +24,13 @@ class TestModeling(unittest.TestCase):
             fakewheels = np.load(whlpath, allow_pickle=True)
 
         # Store trialsdf for later use
-        self.trialsdf = pd.DataFrame({'trial_start': starts,
-                                      'trial_end': ends,
-                                      'stim_onset': stons,
-                                      'feedback': fdbks,
-                                      'wheel_traces': fakewheels})
+        self.trialsdf = pd.DataFrame({
+            'trial_start': starts,
+            'trial_end': ends,
+            'stim_onset': stons,
+            'feedback': fdbks,
+            'wheel_traces': fakewheels
+        })
 
     def binf(self, x):
         return np.ceil(x / self.binwidth).astype(int)
@@ -40,11 +42,13 @@ class TestModeling(unittest.TestCase):
 
         # Design matrix instance
         self.design = bdm.DesignMatrix(self.trialsdf,
-                                       vartypes={'trial_start': 'timing',
-                                                 'trial_end': 'timing',
-                                                 'stim_onset': 'timing',
-                                                 'feedback': 'timing',
-                                                 'wheel_traces': 'continuous'})
+                                       vartypes={
+                                           'trial_start': 'timing',
+                                           'trial_end': 'timing',
+                                           'stim_onset': 'timing',
+                                           'feedback': 'timing',
+                                           'wheel_traces': 'continuous'
+                                       })
 
         # Separate bases for wheel and timing
         tbases = mut.raised_cosine(0.2, 3, self.binf)
