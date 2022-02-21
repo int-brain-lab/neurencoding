@@ -59,6 +59,7 @@ class DesignMatrix:
         # Filter out cells which don't meet the criteria for minimum spiking, while doing trial
         # assignment
         vartypes['duration'] = 'value'
+        base_df = trialsdf.copy()
         trialsdf = trialsdf.copy()  # Make sure we don't modify the original dataframe
         trbounds = trialsdf[['trial_start', 'trial_end']]  # Get the start/end of trials
         # Empty trial duration value to use later
@@ -69,7 +70,7 @@ class DesignMatrix:
         for i, (start, end) in trbounds.iterrows():
             if any(np.isnan((start, end))):
                 _logger.warning(f"NaN values found in trial start or end at trial number {i}. "
-                     "Discarding trial.")
+                                "Discarding trial.")
                 trialsdf.drop(i, inplace=True)
                 continue
             for col in timingvars:
@@ -82,6 +83,7 @@ class DesignMatrix:
         self.binwidth = binwidth
         self.covar = {}
         self.trialsdf = trialsdf
+        self.base_df = base_df
         self.vartypes = vartypes
         self.compiled = False
         return
@@ -160,7 +162,7 @@ class DesignMatrix:
             gainmod = True
             deltaval = self.trialsdf[deltaval]
         else:
-            raise TypeError('deltaval must be None, pandas series, or string reference'
+            raise TypeError('deltaval must be None, pandas serizes, or string reference'
                             f' to trialsdf column. {type(deltaval)} was passed instead.')
         if self.vartypes[eventname] != 'timing':
             raise TypeError(f'Column {eventname} in trialsdf is not registered as a timing')
