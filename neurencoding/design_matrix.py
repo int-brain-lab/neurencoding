@@ -164,6 +164,8 @@ class DesignMatrix:
         else:
             raise TypeError('deltaval must be None, pandas serizes, or string reference'
                             f' to trialsdf column. {type(deltaval)} was passed instead.')
+        if eventname not in self.vartypes:
+            raise ValueError(f'{eventname} not in columns of trialsdf.')
         if self.vartypes[eventname] != 'timing':
             raise TypeError(f'Column {eventname} in trialsdf is not registered as a timing')
 

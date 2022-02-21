@@ -11,6 +11,14 @@ import neurencoding.design_matrix as dm
 import neurencoding.utils as mut
 
 BINWIDTH = 0.02
+VARTYPES = {
+    'trial_start': 'timing',
+    'trial_end': 'timing',
+    'stim_onset': 'timing',
+    'feedback': 'timing',
+    'wheel_traces': 'continuous',
+    'deltas': 'value',
+}
 
 
 @pytest.fixture(scope='module')
@@ -20,7 +28,7 @@ def trialsdf():
     ends = np.array([1.35, 2.09, 3.53, 5.23, 6.58, 7.95, 9.37, 11.31, 12.14, 13.26])
     stons = starts + 0.1
     fdbks = np.array([0.24, 1.64, 3.15, 4.81, 6.23, 7.50, 8.91, 10.16, 11.64, 13.05])
-    deltavals = np.arange(10)
+    deltavals = np.arange(1, 11)
 
     # Figure out how many bins each trial is and generate non-monotonic trace of fake wheel
     whlpath = Path(__file__).parent.joinpath('fixtures', 'design_wheel_traces_test.p')
@@ -39,20 +47,51 @@ def trialsdf():
     return trialsdf
 
 
-@pytest.fixture
 def binf(x):
     return np.ceil(x / BINWIDTH).astype(int)
 
 
-def test_init(trialsdf, binf):
+def test_init(trialsdf):
     """
     test whether the generation of a DesignMatrix object works as intended, subtracting trial
-    start/end times from timing columns and storing the appropriate internal attributes
+    start times from timing columns and storing the appropriate internal attributes
     """
-    pass
+    with pytest.raises(KeyError):
+        design = dm.DesignMatrix(trialsdf, vartypes={
+            'trial_start': 'timing',
+        })
+    with pytest.raises(ValueError):
+        design = dm.DesignMatrix(trialsdf,
+                                 vartypes={
+                                     'trial_start': 'notatype',
+                                     'trial_end': 'notatype',
+                                     'stim_onset': 'notatype',
+                                     'feedback': 'notatype',
+                                     'wheel_traces': 'notatype',
+                                     'deltas': 'notatype',
+                                 })
+    design = dm.DesignMatrix(trialsdf, vartypes=VARTYPES, binwidth=BINWIDTH)
+    assert hasattr(design, 'base_df')
+    assert hasattr(design, 'trialsdf')
+    assert np.all(
+        np.isclose(design.trialsdf['duration'],
+                   trialsdf['trial_end'] - trialsdf['trial_start'],
+                   atol=BINWIDTH / 2))
+    assert design.binwidth == BINWIDTH
+    assert hasattr(design, 'covar') and isinstance(design.covar, dict)
+    assert hasattr(design, 'vartypes') and design.vartypes is VARTYPES
+    assert hasattr(design, 'compiled') and not design.compiled
+    for var in VARTYPES:
+        if VARTYPES[var] == 'timing':
+            assert np.all(
+                np.isclose(design.trialsdf[var],
+                           trialsdf[var] - trialsdf['trial_start'],
+                           atol=1e-5))
+
+    return
 
 
-def test_addcov(trialsdf, binf):
+def test_addcov(trialsdf):
     """
     test the generic .add_covariate() method in DesignMatrix, making sure it stores the passed args
     to the internal covar dict properly, throwing errors along the way for timing mismatches and
@@ -61,70 +100,57 @@ def test_addcov(trialsdf, binf):
     pass
 
 
-def test_timingcov(trialsdf, binf):
+def test_timingcov(trialsdf):
     """
     Test that adding a timing covariate exposes the correct values in design['covar'], and that
     the internal regressor structures are as expected.
     """
-    design = dm.DesignMatrix(trialsdf,
-                             vartypes={
-                                 'trial_start': 'timing',
-                                 'trial_end': 'timing',
-                                 'stim_onset': 'timing',
-                                 'feedback': 'timing',
-                                 'wheel_traces': 'continuous'
-                             },
-                             binwidth=BINWIDTH)
+    design = dm.DesignMatrix(trialsdf, vartypes=VARTYPES, binwidth=BINWIDTH)
     tbases = mut.raised_cosine(0.2, 3, binf)
-    with pytest.raises(TypeError):
-        design.add_covariate_timing('timingtest', 0, tbases)
+    with pytest.raises(ValueError):
+        design.add_covariate_timing('timingtest', 'asdf', tbases)
     with pytest.raises(TypeError):
         design.add_covariate_timing('timingtest', 'wheel_traces', tbases)
-    design.add_covariate_timing('timingtest',
-                                'stim_onset',
-                                tbases,
-                                deltaval='deltas',
-                                offset=-BINWIDTH,
-                                cond=lambda r: r.index < 6,
-                                desc='test timing regressor')
-    assert hasattr(design, 'timingtest')
-    assert design['timingtest']['desc'] == 'test timing regressor'
-    assert np.all(design['timingtest']['bases'] == tbases)
-    assert np.all(design['timingtest']['valid_trials'] == np.array(range(1, 6)))
-    assert design['timingtest']['offset'] == -1
-    assert design['timingtest']['desc'] == 'test timing regressor'
-    assert np.sum(design['timingtest']['regressor'][2]) == pytest.approx(2)
-    assert np.flatnonzero(design['timingtest']['regressor'][2]).shape[0] == 1
-    nzinds = [np.flatnonzero(design['timingtest']['regressor'][i] for i in design.trialsdf.index)]
-    assert np.all(nzinds == pytest.approx(0.1 / BINWIDTH))
+    design.add_covariate_timing(
+        'timingtest',
+        'stim_onset',
+        tbases,
+        deltaval='deltas',
+        offset=-BINWIDTH,
+        cond=lambda r: r.deltas < 6,  # End time of 6th trial
+        desc='test timing regressor')
+    rkey = 'timingtest'
+    assert rkey in design.covar
+    assert design.covar[rkey]['description'] == 'test timing regressor'
+    assert np.all(design.covar[rkey]['bases'] == tbases)
+    assert np.all(design.covar[rkey]['valid_trials'] == np.array(range(5)))
+    assert design.covar[rkey]['offset'] == -BINWIDTH
+    assert np.sum(design.covar[rkey]['regressor'][2]) == pytest.approx(3)
+    assert all(
+        np.flatnonzero(design.covar[rkey]['regressor'][i]).shape[0] == 1
+        for i in design.trialsdf.index)
+    nzinds = [np.flatnonzero(design.covar[rkey]['regressor'][i]) for i in design.trialsdf.index]
+    assert np.all(np.array(nzinds) == pytest.approx(0.1 / BINWIDTH))
 
     return
 
 
-def test_construct(self):
+def test_construct(trialsdf):
     """
     Check whether or not design matrix construction works as intended
     """
 
     # Design matrix instance
-    design = dm.DesignMatrix(self.trialsdf,
-                             vartypes={
-                                 'trial_start': 'timing',
-                                 'trial_end': 'timing',
-                                 'stim_onset': 'timing',
-                                 'feedback': 'timing',
-                                 'wheel_traces': 'continuous'
-                             },
-                             binwidth=BINWIDTH)
+    design = dm.DesignMatrix(trialsdf, vartypes=VARTYPES, binwidth=BINWIDTH)
 
     # Separate bases for wheel and timing
-    tbases = mut.raised_cosine(0.2, 3, self.binf)
-    wbases = mut.raised_cosine(0.1, 2, self.binf)
+    tbases = mut.raised_cosine(0.2, 3, binf)
+    wbases = mut.raised_cosine(0.1, 2, binf)
     # Add covariates one by one. Add different offsets on timings to test
     design.add_covariate_timing('start', 'trial_start', tbases, offset=0.02)
     design.add_covariate_timing('stim_on', 'stim_onset', tbases)
     design.add_covariate_timing('feedback', 'feedback', tbases, offset=-0.02)
-    design.add_covariate('wheelpos', self.trialsdf.wheel_traces, wbases, offset=-0.1)
+    design.add_covariate('wheelpos', trialsdf.wheel_traces, wbases, offset=-0.1)
     design.compile_design_matrix()  # Finally compile
     # Load target DM
     npy_file = Path(__file__).parent.joinpath('fixtures', 'design_matrix_test.npy')
