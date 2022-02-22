@@ -106,7 +106,7 @@ class SequentialSelector:
 
         Parameters
         ----------
-        model : brainbox.modeling.neural_model.EphysModel
+        model : neurencoding.neural_model.EphysModel
             Any class which inherits EphysModel and has already been instantiated.
         n_features_to_select : int, optional
             Number of covariates to select. When None, will sequentially fit all parameters and

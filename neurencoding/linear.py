@@ -24,7 +24,7 @@ class LinearGLM(EphysModel):
 
         Parameters
         ----------
-        design_matrix : brainbox.modeling.design.DesignMatrix
+        design_matrix : neurencoding.design.DesignMatrix
             Design matrix specification that includes information about groups of regressors
         spk_times : np.array
             1-D Array of spike times

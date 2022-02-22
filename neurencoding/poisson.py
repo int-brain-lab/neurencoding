@@ -28,7 +28,7 @@ class PoissonGLM(EphysModel):
 
         Parameters
         ----------
-        design_matrix : brainbox.modeling.DesignMatrix
+        design_matrix : neurencoding.DesignMatrix
             Pre-constructed design matrix with the regressors you want for per-neuron fits.
             Must be compiled.
         spk_times : numpy.ndarray

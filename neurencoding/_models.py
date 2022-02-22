@@ -29,7 +29,7 @@ class EphysModel:
 
         Parameters
         ----------
-        design_matrix: brainbox.modeling.design_matrix.DesignMatrix
+        design_matrix: neurencoding.design_matrix.DesignMatrix
             Design matrix object which has already been compiled for use with neural data.
         spk_times: numpy.array of floats
             1-D array of times at which spiking events were detected, in seconds.
