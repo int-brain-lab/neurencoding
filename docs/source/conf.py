@@ -14,6 +14,17 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+import sys
+from pathlib import Path
+import matplotlib
+matplotlib.use('agg')
+
+print(Path.cwd().parent.parent)
+sys.path.insert(0, Path.cwd().parent.parent)
+
+print('Python %s on %s' % (sys.version, sys.platform))
+print(sys.path)
+
 
 # -- Project information -----------------------------------------------------
 
@@ -31,6 +42,8 @@ release = '0.1.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -53,3 +66,15 @@ html_theme = 'alabaster'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# -- Options for autosummary and autodoc ------------------------------------
+autosummary_generate = True
+# Don't add module names to function docs
+add_module_names = False
+
+autodoc_default_options = {
+    'members': True,
+    'member-order': 'bysource',
+    'undoc-members': True,
+    'show-inheritance': False
+}

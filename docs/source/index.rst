@@ -1,16 +1,44 @@
-.. Neurencoding documentation master file, created by
-   sphinx-quickstart on Fri Mar  4 14:57:20 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. Brainbox documentation master file, created by
+   sphinx-quickstart on Fri Jan 24 11:35:17 2020.
 
-Welcome to Neurencoding's documentation!
-========================================
+===================================================================================================================
+Welcome to Brainbox: A collaborative effort of the `International Brain Lab <http://internationalbrainlab.org>`_
+===================================================================================================================
+
+What is Brainbox?
+-----------------
+
+Brainbox is a suite of simple tools for analyzing spike-sorted
+electrophysiological data.
+
+With brainbox we aim to provide a useful set of functions for analyzing data
+that take simple inputs (lists, arrays, etc.) and provide simple outputs of
+similar form. Brainbox includes tools for analyzing single units and
+populations of neurons, as well as many useful plotting functions.
+
+Brainbox is a work in progress. If you would like to contribute, please visit our `GitHub page <https://github.com/int-brain-lab/ibllib/blob/brainbox/brainbox/CONTRIBUTING.md]>`_!
+
+Table of Contents
+-----------------
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 1
 
+    overview
+    usage/installation
+    usage/quickstart
+    tutorials
+    contributing
 
+Neurencoding API reference
+----------------------
+
+.. toctree::
+    :maxdepth: 1
+
+    modules/design
+    modules/linear
+    modules/poisson
 
 Indices and tables
 ==================
