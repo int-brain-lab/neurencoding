@@ -16,8 +16,6 @@
 
 import sys
 from pathlib import Path
-import matplotlib
-matplotlib.use('agg')
 
 print(Path.cwd().parent.parent)
 sys.path.insert(0, Path.cwd().parent.parent)
