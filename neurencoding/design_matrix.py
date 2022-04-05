@@ -242,7 +242,7 @@ class DesignMatrix:
             bxcar[stind[i]:endind[i] + 1] = height[i]
             stimvecs.append(bxcar)
         regressor = pd.Series(stimvecs, index=self.trialsdf.index)
-        self.add_covariate(covlabel, regressor, None, cond, desc)
+        self.add_covariate(covlabel, regressor, None, offset=0, cond=cond, desc=desc)
         return
 
     def add_covariate_raw(self, covlabel, raw, cond=None, desc=''):
