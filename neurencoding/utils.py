@@ -166,6 +166,7 @@ class SequentialSelector:
         self.support_ = maskdf
         self.sequences_ = seqdf
         self.scores_ = scoredf
+        self._compute_deltas
 
     def _get_best_new_feature(self, mask, cells):
         mask = np.array(mask)
@@ -187,3 +188,23 @@ class SequentialSelector:
                                                                   intercepts.loc[cell], mdm, my[:,
                                                                                                 i])
         return scores.idxmax(axis=1), scores.max(axis=1)
+
+    def _compute_deltas(self):
+        scores = self.scores_
+        positions = self.sequences_
+        n_cov = self.scores_.shape[1]
+        diffs = pd.DataFrame(index=scores.index, columns=range(n_cov))
+        for i in range(n_cov):
+            if i == 0:
+                diffs[i] = scores[i]
+            else:
+                diffs[i] = scores[i] - scores[i - 1]
+        diffmelt = pd.melt(diffs, ignore_index=False, var_name='position',
+                           value_name='diff').set_index('position', append=True)
+        posmelt = pd.melt(positions, ignore_index=False, var_name='position',
+                          value_name='covname').set_index('position', append=True)
+        joindf = diffmelt.join(posmelt, how='inner')
+        assert len(joindf) == len(diffmelt)
+        joindf = joindf[joindf.position_cov == joindf.position_diff]
+        deltadf = joindf.droplevel("position").pivot(columns="covname", values="diff")
+        self.deltas_ = deltadf
