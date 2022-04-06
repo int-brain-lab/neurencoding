@@ -166,7 +166,7 @@ class SequentialSelector:
         self.support_ = maskdf
         self.sequences_ = seqdf
         self.scores_ = scoredf
-        self._compute_deltas
+        self._compute_deltas()
 
     def _get_best_new_feature(self, mask, cells):
         mask = np.array(mask)
