@@ -205,6 +205,5 @@ class SequentialSelector:
                           value_name='covname').set_index('position', append=True)
         joindf = diffmelt.join(posmelt, how='inner')
         assert len(joindf) == len(diffmelt)
-        joindf = joindf[joindf.position_cov == joindf.position_diff]
         deltadf = joindf.droplevel("position").pivot(columns="covname", values="diff")
         self.deltas_ = deltadf
