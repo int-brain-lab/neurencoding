@@ -104,8 +104,7 @@ class EphysModel:
             arrdiffs.append(arr.shape[1] - self.binf(duration))
             spkarrs.append(arr.T)
         y = np.vstack(spkarrs)
-        if hasattr(self.design, 'dm'):
-            assert y.shape[0] == self.design.dm.shape[0], "Oh shit. Indexing error."
+        assert y.shape[0] == self.design.dm.shape[0], "Oh shit. Indexing error."
         self.binnedspikes = y
 
     def combine_weights(self):
