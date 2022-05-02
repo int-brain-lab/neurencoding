@@ -91,15 +91,6 @@ def test_init(trialsdf):
     return
 
 
-def test_addcov(trialsdf):
-    """
-    test the generic .add_covariate() method in DesignMatrix, making sure it stores the passed args
-    to the internal covar dict properly, throwing errors along the way for timing mismatches and
-    finally incrementing the currcol value for the current last DM column.
-    """
-    pass
-
-
 def test_timingcov(trialsdf):
     """
     Test that adding a timing covariate exposes the correct values in design['covar'], and that
@@ -132,6 +123,49 @@ def test_timingcov(trialsdf):
     nzinds = [np.flatnonzero(design.covar[rkey]['regressor'][i]) for i in design.trialsdf.index]
     assert np.all(np.array(nzinds) == pytest.approx(0.1 / BINWIDTH))
 
+    return
+
+
+def test_addboxcar(trialsdf):
+    # TODO: Write this
+    pass
+
+
+def test_addraw(trialsdf):
+    # TODO: Write this too
+    pass
+
+
+def test_addcov(trialsdf):
+    """
+    test the generic .add_covariate() method in DesignMatrix, making sure it stores the passed args
+    to the internal covar dict properly, throwing errors along the way for timing mismatches and
+    finally incrementing the currcol value for the current last DM column.
+    """
+    design = dm.DesignMatrix(trialsdf, vartypes=VARTYPES, binwidth=BINWIDTH)
+    tbases = mut.raised_cosine(0.2, 3, binf)
+    with pytest.raises(ValueError):
+        # Check that if the length of reg. doesn't match duration the method will throw an error.
+        reglist = [np.ones(binf(dur)) for dur in design.trialsdf.duration]
+        dummyregressor = pd.Series(reglist, index=design.trialsdf.index)
+        dummyregressor.loc[0] = np.pad(dummyregressor.loc[0], (0, 1))  # Regressor too long on tr 1
+        design.add_covariate('testreg', dummyregressor, None)
+    with pytest.raises(ValueError):
+        # Check that if trials not present in the design DF are in the regressor an error occurs
+        dummyregressor.loc[0] = dummyregressor.loc[0][:-1]  # Fix our earlier issue
+        dummyregressor = pd.concat([dummyregressor, pd.Series([10], index=[1000])])
+        design.add_covariate('testreg', dummyregressor, None)
+    design.add_covariate('wheel',
+                         trialsdf.wheel_traces,
+                         tbases,
+                         offset=-0.2,
+                         cond=lambda tr: tr.deltas <= 5,
+                         desc='testdesc')
+    assert np.all(design.covar['wheel']['valid_trials'] == trialsdf.index[trialsdf.deltas <= 5])
+    assert np.all(design.covar['wheel']['bases'] == tbases)
+    assert design.covar['wheel']['offset'] == -0.2
+    assert np.all(design.covar['wheel']['regressor'] == trialsdf.wheel_traces)
+    assert design.currcol == 3
     return
 
 
