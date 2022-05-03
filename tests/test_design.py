@@ -127,12 +127,59 @@ def test_timingcov(trialsdf):
 
 
 def test_addboxcar(trialsdf):
-    # TODO: Write this
-    pass
+    """
+    Test the internal method for adding a boxcar covariate with a defined start and end time taken
+    from the columnd of the trials dataframe passed to the constructor.
+    """
+    # Make sure type enforcement and data checks work
+    with pytest.raises(AttributeError):  # duplicate cov checking works?
+        design = dm.DesignMatrix(trialsdf, vartypes=VARTYPES, binwidth=BINWIDTH)
+        design.add_covariate_boxcar('testcov', 'stim_onset', 'feedback')
+        design.add_covariate_boxcar('testcov', 'stim_onset', 'feedback')
+    with pytest.raises(KeyError):  # non-existing column checks work?
+        design = dm.DesignMatrix(trialsdf, vartypes=VARTYPES, binwidth=BINWIDTH)
+        design.add_covariate_boxcar('testcov', 'stim_onset', 'notacolumn')
+    with pytest.raises(KeyError):  # Column check for height works?
+        design.add_covariate_boxcar('testcov', 'stim_onset', 'feedback', height='notacolumn')
+    with pytest.raises(TypeError):  # Only timing bounds on boxcar end?
+        design = dm.DesignMatrix(trialsdf, vartypes=VARTYPES, binwidth=BINWIDTH)
+        design.add_covariate_boxcar('testcov', 'stim_onset', 'wheel_traces')
+    with pytest.raises(TypeError):  # Only timing bounds on boxcar start?
+        design.add_covariate_boxcar('testcov', 'wheel_traces', 'stim_onset')
+    with pytest.raises(IndexError):  # Correctly reject mismatched manual height series?
+        tmpheights = pd.Series(np.arange(100))
+        design.add_covariate_boxcar('testcov', 'stim_onset', 'feedback', height=tmpheights)
+    with pytest.raises(IndexError):  # Correctly reject mismatched height indices?
+        tmpheights = pd.Series(np.arange(10), index=np.arange(0, 20, 2, dtype=int))
+        design.add_covariate_boxcar('testcov', 'stim_onset', 'feedback', height=tmpheights)
+
+    # Check whether the method is generating a reasonable regressor
+    design = dm.DesignMatrix(trialsdf, vartypes=VARTYPES, binwidth=BINWIDTH)
+    design.add_covariate_boxcar('testboxcar',
+                                'stim_onset',
+                                'feedback',
+                                cond=lambda tr: tr.deltas <= 5,
+                                height='deltas',
+                                desc='Test boxcar covariate')
+    assert 'testboxcar' in design.covar
+    assert np.all(
+        design.covar['testboxcar']['valid_trials'] == trialsdf.index[trialsdf.deltas <= 5])
+    assert design.covar['testboxcar']['bases'] is None
+    assert design.covar['testboxcar']['offset'] == 0
+    startinds = np.array(
+        [np.flatnonzero(x > 0)[0] for x in design.covar['testboxcar']['regressor']])
+    endinds = np.array(
+        [np.flatnonzero(x > 0)[-1] for x in design.covar['testboxcar']['regressor']])
+    for i, idx in enumerate(trialsdf.index):
+        curr_reg = design.covar['testboxcar']['regressor'].loc[idx]
+        assert startinds[i] == pytest.approx(0.1 / BINWIDTH)
+        assert endinds[i] == pytest.approx(design.binf(design.trialsdf.loc[idx, 'feedback']))
+        assert np.all(curr_reg[np.flatnonzero(curr_reg)] == trialsdf.loc[idx, 'deltas'])
+    return
 
 
 def test_addraw(trialsdf):
-    # TODO: Write this too
+    # TODO: Write this
     pass
 
 
@@ -185,6 +232,7 @@ def test_construct(trialsdf):
     design.add_covariate_timing('stim_on', 'stim_onset', tbases)
     design.add_covariate_timing('feedback', 'feedback', tbases, offset=-0.02)
     design.add_covariate('wheelpos', trialsdf.wheel_traces, wbases, offset=-0.1)
+    # TODO: Add a boxcar covariate and a raw covariate to test those helper methods
     design.compile_design_matrix()  # Finally compile
     # Load target DM
     npy_file = Path(__file__).parent.joinpath('fixtures', 'design_matrix_test.npy')

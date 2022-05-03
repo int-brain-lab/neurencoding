@@ -189,8 +189,6 @@ class DesignMatrix:
         variables, such that the covariate is a step function with non-zero value between those
         values.
 
-        Note: This has not been tested yet and is not guaranteed to work, or work correctly.
-
         Parameters
         ----------
         covlabel : str
@@ -229,7 +227,7 @@ class DesignMatrix:
             else:
                 raise KeyError(f'{height} is str not in columns of trialsdf')
         elif isinstance(height, pd.Series):
-            if not all(height.index == self.trialsdf.index):
+            if len(height) != len(self.trialsdf) or not all(height.index == self.trialsdf.index):
                 raise IndexError('Indices of height series does not match trialsdf.')
         elif height is None:
             height = pd.Series(np.ones(len(self.trialsdf.index)), index=self.trialsdf.index)
