@@ -1,10 +1,15 @@
+# Standard library
+from typing import Any, Optional
+
 # Third party libraries
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from scipy.special import xlogy
 from sklearn.metrics import r2_score
 
 # Neurencoding repo imports
+import neurencoding
 from .utils import bincount2D, neglog
 
 
@@ -16,12 +21,12 @@ class EphysModel:
     """
 
     def __init__(self,
-                 design_matrix,
-                 spk_times,
-                 spk_clu,
-                 binwidth=0.02,
-                 mintrials=100,
-                 stepwise=False):
+                 design_matrix: neurencoding.DesignMatrix,
+                 spk_times: npt.ArrayLike,
+                 spk_clu: npt.ArrayLike,
+                 binwidth: float = 0.02,
+                 mintrials: int = 100,
+                 stepwise: bool = False):
         """
         Construct GLM object using information about all trials, and the relevant spike times.
         Only ingests data, and further object methods must be called to describe kernels, gain
@@ -107,7 +112,7 @@ class EphysModel:
         assert y.shape[0] == self.design.dm.shape[0], "Oh shit. Indexing error."
         self.binnedspikes = y
 
-    def combine_weights(self):
+    def combine_weights(self) -> pd.DataFrame:
         """
         Combined fit coefficients and intercepts to produce kernels where appropriate, which
         describe activity.
@@ -159,7 +164,7 @@ class EphysModel:
         else:
             raise AttributeError('No valid metric exists in the instance for use by _scorer()')
 
-    def fit(self, train_idx=None, printcond=True):
+    def fit(self, train_idx: Optional[npt.ArrayLike] = None, printcond: bool = True):
         """
         Fit the current set of binned spikes as a function of the current design matrix. Requires
         NeuralGLM.bin_spike_trains and NeuralGLM.compile_design_matrix to be run first. Will store
@@ -207,7 +212,7 @@ class EphysModel:
         self.coefs, self.intercepts = coefs, intercepts
         return
 
-    def score(self, testinds=None):
+    def score(self, testinds: Optional[npt.ArrayLike] = None):
         """
         Score model using chosen metric
 
@@ -232,7 +237,7 @@ class EphysModel:
             scores.at[cell] = self._scorer(wt, bias, dm, y)
         return scores
 
-    def binf(self, t):
+    def binf(self, t: float) -> int:
         """
         Bin function for a given timestep. Returns the number of bins after trial start a given t
         would occur at.

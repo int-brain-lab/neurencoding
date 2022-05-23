@@ -1,9 +1,12 @@
 # Standard library
+from ctypes import Union
 import logging
+from typing import Optional
 
 # Third party libraries
 import numba as nb
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import scipy.sparse as sp
 
@@ -16,7 +19,7 @@ class DesignMatrix:
     and allow the generation of a design matrix with specified regressors
     """
 
-    def __init__(self, trialsdf, vartypes, binwidth=0.02):
+    def __init__(self, trialsdf: pd.DataFrame, vartypes: dict[str, str], binwidth: float = 0.02):
         """
         Class for generating design matrices to model neural data. Provides handy routines for
         describing neural spiking activity using basis functions and other primitives.
@@ -88,7 +91,7 @@ class DesignMatrix:
         self.compiled = False
         return
 
-    def binf(self, t):
+    def binf(self, t: float):
         """
         Function to bin time t into binwidth of DM
 
@@ -105,13 +108,13 @@ class DesignMatrix:
         return np.ceil(t / self.binwidth).astype(int)
 
     def add_covariate_timing(self,
-                             covlabel,
-                             eventname,
-                             bases,
-                             offset=0,
-                             deltaval=None,
-                             cond=None,
-                             desc=''):
+                             covlabel: str,
+                             eventname: str,
+                             bases: np.ndarray,
+                             offset: float = 0,
+                             deltaval: Optional[Union[str, pd.Series]] = None,
+                             cond: Optional[Union[npt.ArrayLike, callable]] = None,
+                             desc: str = ''):
         """
         Convenience wrapper for adding timing event regressors to the design matrix.
 
@@ -183,7 +186,13 @@ class DesignMatrix:
         self.add_covariate(covlabel, regressor, bases, offset, cond, desc)
         return
 
-    def add_covariate_boxcar(self, covlabel, boxstart, boxend, cond=None, height=None, desc=''):
+    def add_covariate_boxcar(self,
+                             covlabel: str,
+                             boxstart: str,
+                             boxend: str,
+                             cond: Optional[Union[npt.ArrayLike, callable]] = None,
+                             height: Optional[Union[str, pd.Series]] = None,
+                             desc: str = ''):
         """
         Convenience wrapped on add_covariate to add a boxcar covariate on the given start and end
         variables, such that the covariate is a step function with non-zero value between those
@@ -243,7 +252,11 @@ class DesignMatrix:
         self.add_covariate(covlabel, regressor, None, offset=0, cond=cond, desc=desc)
         return
 
-    def add_covariate_raw(self, covlabel, raw, cond=None, desc=''):
+    def add_covariate_raw(self,
+                          covlabel: str,
+                          raw: Union[str, callable, pd.Series],
+                          cond: Optional[Union[npt.ArrayLike, callable]] = None,
+                          desc: str = ''):
         """
         Convenience wrapper to add a 'raw' covariate, that is to say a covariate which is a
         continuous value that changes with time during the course of a trial.
@@ -292,7 +305,13 @@ class DesignMatrix:
                 raise IndexError(f'Some array shapes in {raw} do not match binned duration.')
             self.add_covariate(covlabel, raw, None, cond=cond, desc=desc)
 
-    def add_covariate(self, covlabel, regressor, bases, offset=0, cond=None, desc=''):
+    def add_covariate(self,
+                      covlabel: str,
+                      regressor: pd.Series,
+                      bases: Optional[npt.ArrayLike],
+                      offset: float = 0,
+                      cond: Optional[Union[npt.ArrayLike, callable]] = None,
+                      desc: str = ''):
         """
         Parent function to add covariates to model object. Takes a regressor in the form of a
         pandas Series object, a T x M array of M bases, and stores them for use in the design
@@ -367,7 +386,7 @@ class DesignMatrix:
         self.covar[covlabel] = cov
         return
 
-    def compile_design_matrix(self, dense=True):
+    def compile_design_matrix(self, dense: Optional[bool] = True):
         """
         Compiles design matrix for the current experiment based on the covariates which were added
         with the various NeuralGLM.add_covariate methods available. Can optionally compile a sparse
