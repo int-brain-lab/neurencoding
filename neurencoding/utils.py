@@ -190,8 +190,8 @@ def load_trials_df(eid, one=None, maxlen=None, t_before=0., t_after=0.2, ret_whe
     trialsdf = pd.DataFrame(trialdata)
     if maxlen is not None:
         trialsdf.set_index(np.nonzero(keeptrials)[0], inplace=True)
-    trialsdf['trial_start'] = trialsdf[align_event] - t_before
-    trialsdf['trial_end'] = trialsdf[align_event] + t_after
+    trialsdf['trial_start'] = trialsdf['stimOn_times'] - t_before
+    trialsdf['trial_end'] = trialsdf['feedback_times'] + t_after
     tdiffs = trialsdf['trial_end'] - np.roll(trialsdf['trial_start'], -1)
     if np.any(tdiffs[:-1] > 0):
         logging.warning(f'{sum(tdiffs[:-1] > 0)} trials overlapping due to t_before and t_after '
