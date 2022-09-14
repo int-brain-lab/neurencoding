@@ -1,5 +1,5 @@
 # Standard library
-from typing import Any, Optional
+from typing import Optional
 
 # Third party libraries
 import numpy as np
@@ -21,7 +21,7 @@ class EphysModel:
     """
 
     def __init__(self,
-                 design_matrix: neurencoding.DesignMatrix,
+                 design_matrix: neurencoding.design_matrix.DesignMatrix,
                  spk_times: npt.ArrayLike,
                  spk_clu: npt.ArrayLike,
                  binwidth: float = 0.02,
