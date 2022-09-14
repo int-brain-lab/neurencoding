@@ -1,7 +1,6 @@
 # Standard library
-from ctypes import Union
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 # Third party libraries
 import numba as nb
