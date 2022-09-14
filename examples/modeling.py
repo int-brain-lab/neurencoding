@@ -1,5 +1,6 @@
 import numpy as np
 from one.api import ONE
+from sklearn.model_selection import train_test_split
 
 import brainbox.io.one as bbone
 import neurencoding.utils as mut
@@ -65,8 +66,8 @@ design.compile_design_matrix()
 
 # Now let's load in some spikes and fit them
 spikes, clusters = bbone.load_spike_sorting(eid, one, probe='probe00')
-spk_times = spikes.probe00.times
-spk_clu = spikes.probe00.clusters
+spk_times = spikes['probe00'].times
+spk_clu = spikes['probe00'].clusters
 
 # We will build a linear model and a poisson model:
 lm = LinearGLM(design, spk_times, spk_clu, binwidth=BINSIZE)
@@ -81,6 +82,7 @@ lm.score()
 pm.score()
 
 # Optionally, we could also run stepwise regression, also known as Sequential Feature Selection
+train, test = train_test_split(trialsdf.index, test_size=0.2)
 sfs = mut.SequentialSelector(lm, n_features_to_select=3)
-sfs.fit(progress=True)
+sfs.fit(progress=True, train_idx=train)
 sfs.scores_
