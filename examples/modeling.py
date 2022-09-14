@@ -18,7 +18,7 @@ eid = '4d8c7767-981c-4347-8e5e-5d5fffe38534'
 
 # Load in a dataframe of trial-by-trial data
 trialsdf = mut.load_trials_df(eid, one, maxlen=2., t_before=0.4, t_after=0.6, ret_wheel=True,
-                                wheel_binsize=BINSIZE)
+                              wheel_binsize=BINSIZE)
 
 # Define what kind of data type each column is
 vartypes = {
