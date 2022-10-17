@@ -301,8 +301,8 @@ class SequentialSelector:
             fulltrain = pd.DataFrame(index=fullindex, columns=range(self.n_features_to_select))
             fulltest = pd.DataFrame(index=fullindex, columns=range(self.n_features_to_select))
 
-        for i in tqdm(range(n_iterations), desc='step', leave=False, disable=not progress):
-            masks_set = maskdf.groupby(self.features.tolist()).groups
+        for i in tqdm(range(n_iterations), desc='step', leave=False, disable=not progress): # loop in rpogress 
+            masks_set = maskdf.groupby(self.features.tolist()).groups 
             for current_mask in tqdm(masks_set, desc='feature subset', leave=False):
                 cells = masks_set[current_mask]
                 outputs = self._get_best_new_feature(current_mask, cells, full_scores)
@@ -349,7 +349,7 @@ class SequentialSelector:
             fitfeatures = self.features[candidate_mask]
             feat_idx = np.hstack([self.design.covar[feat]['dmcol_idx'] for feat in fitfeatures])
             mdm = self.design[np.ix_(self.train, feat_idx)]
-            mdm_test = self.design[np.ix_(self.test, feat_idx)]
+            mdm_test = self.design[np.ix_(self.test, feat_idx)] # select the rows self.test and columns feat_idx 
 
             coefs, intercepts = self.model._fit(mdm, my, cells=cells)
             for i, cell in enumerate(cells):
