@@ -358,7 +358,10 @@ class DesignMatrix:
         if not hasattr(self, 'currcol'):
             self.currcol = 0
         if callable(cond):
-            cond = self.trialsdf.index[self.trialsdf.apply(cond, axis=1)].to_numpy()
+            try:
+                cond = self.trialsdf.index[self.trialsdf.apply(cond, axis=1)].to_numpy()
+            except AttributeError:
+                cond = self.trialsdf.index[self.trialsdf.apply(cond, axis=1)]
         if not all(regressor.index == self.trialsdf.index):
             raise IndexError('Indices of regressor and trials dataframes do not match.')
 
