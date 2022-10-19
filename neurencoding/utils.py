@@ -327,6 +327,8 @@ class SequentialSelector:
             self.full_scores_test_ = fulltest
         self.deltas_train_ = self._compute_deltas(self.scores_train_, self.sequences_)
         self.deltas_test_ = self._compute_deltas(self.scores_test_, self.sequences_)
+        # TODO: Add line here that actually computes Rsq of mean model based on train set when scored on train set,
+        # then subtract that from the first column of self.deltas_test
 
     def _get_best_new_feature(self, mask, cells, full_scores=False):
         """
