@@ -1,4 +1,2 @@
-import design_matrix
-import linear
-import poisson
-import utils
+# flake8: noqa
+from neurencoding import design_matrix, linear, poisson, utils
