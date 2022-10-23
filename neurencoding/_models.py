@@ -112,7 +112,7 @@ class EphysModel:
         assert y.shape[0] == self.design.dm.shape[0], "Oh shit. Indexing error."
         self.binnedspikes = y
 
-    def combine_weights(self) -> pd.DataFrame:
+    def combine_weights(self, peaksonly=False) -> pd.DataFrame:
         """
         Combined fit coefficients and intercepts to produce kernels where appropriate, which
         describe activity.
@@ -132,14 +132,21 @@ class EphysModel:
                 continue
             winds = self.design.covar[var]['dmcol_idx']
             bases = self.design.covar[var]['bases']
-            weights = self.coefs.apply(lambda w: np.sum(w[winds] * bases, axis=1))
             offset = self.design.covar[var]['offset']
             tlen = bases.shape[0] * self.binwidth
             tstamps = np.linspace(0 + offset, tlen + offset, bases.shape[0])
+            if peaksonly:
+                peakinds = np.argmax(bases, axis=0)
+                peakvals = np.max(bases, axis=0)
+                tstamps = tstamps[peakinds]
+                weights = self.coefs.apply(lambda w: w[winds] * peakvals)
+            else:
+                weights = self.coefs.apply(lambda w: np.sum(w[winds] * bases, axis=1))
             outputs[var] = pd.DataFrame(weights.values.tolist(),
                                         index=weights.index,
                                         columns=tstamps)
         self.combined_weights = outputs
+        self.peaksonly_weights = peaksonly
         return outputs
 
     def _scorer(self, wt, bias, dm, y):
