@@ -231,6 +231,10 @@ class DesignMatrix:
 
         if isinstance(height, str):
             if height in self.trialsdf.columns:
+                if self.vartypes[height]=='continuous': 
+                    continuous=1;
+                else: 
+                    continuous=0;
                 height = self.trialsdf[height]
             else:
                 raise KeyError(f'{height} is str not in columns of trialsdf')
@@ -245,7 +249,10 @@ class DesignMatrix:
         stimvecs = []
         for i in self.trialsdf.index:
             bxcar = np.zeros(vecsizes[i])
-            bxcar[stind[i]:endind[i] + 1] = height[i]
+            if continuous:
+                bxcar[stind[i]:endind[i] + 1] = height[i][stind[i]:endind[i] + 1].T
+            else: 
+                bxcar[stind[i]:endind[i] + 1] = height[i]
             stimvecs.append(bxcar)
         regressor = pd.Series(stimvecs, index=self.trialsdf.index)
         self.add_covariate(covlabel, regressor, None, offset=0, cond=cond, desc=desc)
