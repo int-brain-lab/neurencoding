@@ -5,33 +5,3 @@ import_heading_stdlib = "Standard library"
 import_heading_thirdparty = "Third party libraries"
 import_heading_firstparty = "IBL libraries"
 import_heading_localfolder = "Neurencoding repo imports"
-
-[tool.yapf]
-based_on_style = "google"
-column_limit = 99
-split_before_dot = true
-
-[tool.poetry]
-name = "neurencoding"
-version = "0.1.0"
-description = "Encoding models for single recorded units in the brain"
-authors = ["Berk Gercek <berkgercek@duck.com>"]
-license = "mit"
-
-[tool.poetry.dependencies]
-python = "^3.8"
-numpy = "^1.0"
-scipy = "^1.0"
-pandas = "^1.0"
-numba = "^0.50"
-scikit-learn = "^1.0"
-tqdm = "*"
-pytest = "^6.0"
-
-[tool.poetry.dev-dependencies]
-isort = "^5.10.1"
-yapf = "^0.32.0"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
