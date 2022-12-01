@@ -285,6 +285,8 @@ class SequentialSelector:
             self.n_features_to_select = int(n_features_to_select)
         else:
             self.n_features_to_select = len(self.design.covar)
+        if direction not in ["forward", "backward"]:
+            raise ValueError("direction must be 'forward' or 'backward'")
         self.direction = direction
         self.scoring = scoring
         self.trlabels = self.design.trlabels
@@ -320,6 +322,10 @@ class SequentialSelector:
         if train_idx is not None:
             self.train = np.isin(self.trlabels, train_idx).flatten()
             self.test = ~self.train
+            test_idx = np.unique(self.trlabels[self.test])
+        else:
+            train_idx = np.unique(self.trlabels[self.train])
+            test_idx = np.unique(self.trlabels[self.test])
         n_features = len(self.features)
         maskdf = pd.DataFrame(index=self.model.clu_ids, columns=self.features, dtype=bool)
         maskdf.loc[:, :] = False
@@ -344,7 +350,8 @@ class SequentialSelector:
         )
         if self.direction == "backward":
             self.model.fit(train_idx=train_idx, printcond=False)
-            self.basescores = self.model.score()
+            self.basescores_test_ = self.model.score(testinds=test_idx)
+            self.basescores_train_ = self.model.score(testinds=train_idx)
         if full_scores:
             fullindex = pd.MultiIndex.from_product(
                 [self.model.clu_ids, np.arange(n_iterations)], names=["clu_id", "feature_iter"]
@@ -376,8 +383,9 @@ class SequentialSelector:
         self.scores_test_ = testscoredf
         self.scores_train_ = trainscoredf
         if full_scores:
-            self.full_scores_train_ = fulltrain
-            self.full_scores_test_ = fulltest
+            colnames = {i: k for i, k in enumerate(self.features)}
+            self.full_scores_train_ = fulltrain.rename(columns=colnames)
+            self.full_scores_test_ = fulltest.rename(columns=colnames)
         if not self.direction == "backward":
             self.deltas_train_ = self._compute_deltas(self.scores_train_, self.sequences_)
             self.deltas_test_ = self._compute_deltas(self.scores_test_, self.sequences_)
