@@ -5,3 +5,6 @@
 *.png
 *.svg
 *.pyc
+*.egg-info/
+dist/
+docs/
