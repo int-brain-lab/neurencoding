@@ -6,5 +6,6 @@
 *.svg
 *.pyc
 *.egg-info/
-#dist/
-#docs/
+dist/
+docs/
+# .DS_store
