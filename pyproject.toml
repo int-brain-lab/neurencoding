@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neurencoding"
-version = "0.1.4"
+version = "0.1.6"
 authors = [
     {name="Berk Gercek", email="berkgercek@duck.com"},
 ]
@@ -20,9 +20,16 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
-
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "scikit-learn",
+    "tqdm",
+    "joblib",
+    "matplotlib",
+    "seaborn",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/berkgercek/neurencoding"
