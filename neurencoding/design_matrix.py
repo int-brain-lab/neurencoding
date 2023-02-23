@@ -232,16 +232,18 @@ class DesignMatrix:
         if isinstance(height, str):
             if height in self.trialsdf.columns:
                 if self.vartypes[height]=='continuous': 
-                    continuous=1;
+                    continuous = True
                 else: 
-                    continuous=0;
+                    continuous = False
                 height = self.trialsdf[height]
             else:
                 raise KeyError(f'{height} is str not in columns of trialsdf')
         elif isinstance(height, pd.Series):
+            continuous = False
             if len(height) != len(self.trialsdf) or not all(height.index == self.trialsdf.index):
                 raise IndexError('Indices of height series does not match trialsdf.')
         elif height is None:
+            continuous = False
             height = pd.Series(np.ones(len(self.trialsdf.index)), index=self.trialsdf.index)
         vecsizes = self.trialsdf['duration'].apply(self.binf)
         stind = self.trialsdf[boxstart].apply(self.binf)

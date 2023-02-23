@@ -24,6 +24,10 @@ classifiers = [
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
 
+[project.urls]
+"Homepage" = "https://github.com/berkgercek/neurencoding"
+"Bug Tracker" = "https://github.com/berkgercek/neurencoding/issues"
+
 [tool.isort]
 known_first_party = ["ibllib", "iblutil", "one", "brainbox"]
 known_local_folder = ["neurencoding"]
