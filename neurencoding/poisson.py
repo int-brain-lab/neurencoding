@@ -1,27 +1,32 @@
 # Standard library
-from warnings import catch_warnings, warn
+import logging
+from warnings import catch_warnings
 
 # Third party libraries
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import PoissonRegressor
+from sklearn.model_selection import GridSearchCV
 from tqdm import tqdm
 
 # Neurencoding repo imports
 from ._models import EphysModel
 
+_logger = logging.getLogger("neurencoding")
+
 
 class PoissonGLM(EphysModel):
-
-    def __init__(self,
-                 design_matrix,
-                 spk_times,
-                 spk_clu,
-                 binwidth=0.02,
-                 metric='dsq',
-                 fit_intercept=True,
-                 alpha=0,
-                 mintrials=100):
+    def __init__(
+        self,
+        design_matrix,
+        spk_times,
+        spk_clu,
+        binwidth=0.02,
+        metric="dsq",
+        fit_intercept=True,
+        alpha=0,
+        mintrials=100,
+    ):
         """
         Fit a poisson model using a DesignMatrix and spiking rate.
         Uses the sklearn.linear_model.PoissonRegressor to perform fitting.
@@ -43,22 +48,33 @@ class PoissonGLM(EphysModel):
             Choice of metric for use by PoissonGLM.score, by default 'dsq'
         fit_intercept : bool, optional
             Whether or not to fit a bias term in the poisson model, by default True
-        alpha : float, optional
+        alpha : float or array, optional
             Regularization strength for the poisson regression, determines the strength of the
-            L2 penalty in the objective for fitting, by default 0
+            L2 penalty in the objective for fitting. If an array of values is passed,
+            sklearn's GridSearchCV will be used to test all values and choose the best via
+            cross-validation, by default 0
         mintrials : int, optional
             Minimum number of trials in which a unit must fire at least one spike in order to be
             included in the fitting, by default 100
         """
         super().__init__(design_matrix, spk_times, spk_clu, binwidth, mintrials)
-        # TODO: Implement grid search over alphas to find optimal value
         self.metric = metric
         self.fit_intercept = fit_intercept
-        self.alpha = alpha
+        if hasattr(alpha, "shape"):
+            self._alpha_grid = alpha
+            self.estimator = GridSearchCV(
+                PoissonRegressor(fit_intercept=fit_intercept), {"alpha": alpha}, max_iter=300
+            )
+        else:
+            self.alpha = alpha
+            self.estimator = PoissonRegressor(
+                fit_intercept=fit_intercept, alpha=alpha, max_iter=300
+            )
+
         self.link = np.exp
         self.invlink = np.log
 
-    def _fit(self, dm, binned, cells=None, noncovwarn=False):
+    def _fit(self, dm, binned, cells=None, noncovwarn=True, bestparams=False):
         """
         Fit a GLM using scikit-learn implementation of PoissonRegressor. Uses a regularization
         strength parameter alpha, which is the strength of ridge regularization term.
@@ -76,25 +92,28 @@ class PoissonGLM(EphysModel):
         cells : list
             List of cells labels for columns in binned. Will default to all cells in model if None
             is passed. Must be of the same length as columns in binned. By default None.
+        bestparams: bool
+            Whether or not to
         """
         if cells is None:
             cells = self.clu_ids.flatten()
         if cells.shape[0] != binned.shape[1]:
-            raise ValueError('Length of cells does not match shape of binned')
+            raise ValueError("Length of cells does not match shape of binned")
 
-        # TODO: Make this malleable to accept either an estimator or a GridSearchCV meta-estimator
-        coefs = pd.Series(index=cells, name='coefficients', dtype=object)
-        intercepts = pd.Series(index=cells, name='intercepts')
+        coefs = pd.Series(index=cells, name="coefficients", dtype=object)
+        intercepts = pd.Series(index=cells, name="intercepts")
+        alphas = pd.Series(index=cells, name="alphas")
         nonconverged = []
-        for cell in tqdm(cells, 'Fitting units:', leave=False):
+        for cell in tqdm(cells, "Fitting units:", leave=False):
             cell_idx = np.argwhere(cells == cell)[0, 0]
             cellbinned = binned[:, cell_idx]
             with catch_warnings(record=True) as w:
-                fitobj = PoissonRegressor(alpha=self.alpha,
-                                          max_iter=300,
-                                          fit_intercept=self.fit_intercept).fit(dm, cellbinned)
+                fitobj = self.estimator.fit(dm, cellbinned)
             if len(w) != 0:
                 nonconverged.append(cell)
+            if isinstance(self.estimator, GridSearchCV):
+                alphas.at[cell] = fitobj.best_params_["alpha"]
+                fitobj = fitobj.best_estimator_
             coefs.at[cell] = fitobj.coef_
             if self.fit_intercept:
                 intercepts.at[cell] = fitobj.intercept_
@@ -102,6 +121,7 @@ class PoissonGLM(EphysModel):
                 intercepts.at[cell] = 0
         if noncovwarn:
             if len(nonconverged) != 0:
-                warn(f'Fitting did not converge for some units: {nonconverged}')
-
+                _logger.warn("Non-converged cells: {}".format(nonconverged))
+        if bestparams:
+            return coefs, intercepts, alphas
         return coefs, intercepts

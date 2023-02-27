@@ -7,6 +7,7 @@ import numpy.typing as npt
 import pandas as pd
 from scipy.special import xlogy
 from sklearn.metrics import r2_score
+from sklearn.base import MetaEstimatorMixin
 
 # Neurencoding repo imports
 import neurencoding
@@ -20,13 +21,15 @@ class EphysModel:
     being used makes sense.
     """
 
-    def __init__(self,
-                 design_matrix: neurencoding.design_matrix.DesignMatrix,
-                 spk_times: npt.ArrayLike,
-                 spk_clu: npt.ArrayLike,
-                 binwidth: float = 0.02,
-                 mintrials: int = 100,
-                 stepwise: bool = False):
+    def __init__(
+        self,
+        design_matrix: neurencoding.design_matrix.DesignMatrix,
+        spk_times: npt.ArrayLike,
+        spk_clu: npt.ArrayLike,
+        binwidth: float = 0.02,
+        mintrials: int = 100,
+        stepwise: bool = False,
+    ):
         """
         Construct GLM object using information about all trials, and the relevant spike times.
         Only ingests data, and further object methods must be called to describe kernels, gain
@@ -56,13 +59,13 @@ class EphysModel:
         if not len(spk_times) == len(spk_clu):
             raise IndexError("Spike times and cluster IDs are not same length")
         if not design_matrix.compiled:
-            raise AttributeError('Design matrix object must be compiled before passing to fit')
+            raise AttributeError("Design matrix object must be compiled before passing to fit")
 
         # Filter out cells which don't meet the criteria for minimum spiking, while doing trial
         # assignment
         base_df = design_matrix.base_df
         clu_ids = np.unique(spk_clu).flatten()
-        trbounds = base_df[['trial_start', 'trial_end']]  # Get the start/end of trials
+        trbounds = base_df[["trial_start", "trial_end"]]  # Get the start/end of trials
         # Initialize a Cells x Trials bool array to easily see how many trials a clu spiked
         trialspiking = np.zeros((base_df.index.max() + 1, clu_ids.max() + 1), dtype=bool)
         # Empty trial duration value to use later
@@ -73,7 +76,7 @@ class EphysModel:
         st_endlast = 0
         for i, (start, end) in trbounds.iterrows():
             st_startind = np.searchsorted(spk_times[st_endlast:], start) + st_endlast
-            st_endind = np.searchsorted(spk_times[st_endlast:], end, side='right') + st_endlast
+            st_endind = np.searchsorted(spk_times[st_endlast:], end, side="right") + st_endlast
             st_endlast = st_endind
             trial_clu = np.unique(spk_clu[st_startind:st_endind])
             trialspiking[i, trial_clu] = True
@@ -89,12 +92,12 @@ class EphysModel:
         self.binwidth = binwidth
 
         if len(self.clu_ids) == 0:
-            raise UserWarning('No neuron fired a spike in a minimum number.')
+            raise UserWarning("No neuron fired a spike in a minimum number.")
 
         # Bin spikes
         spkarrs, arrdiffs = [], []
         for i in self.design.trialsdf.index:
-            duration = self.design.trialsdf.loc[i, 'duration']
+            duration = self.design.trialsdf.loc[i, "duration"]
             durmod = duration % self.binwidth
             if durmod > (self.binwidth / 2):
                 duration = duration - (self.binwidth / 2)
@@ -104,8 +107,9 @@ class EphysModel:
                 continue
             spks = self.spikes[i]
             clu = self.clu[i]
-            arr = bincount2D(spks, clu, xbin=self.binwidth, ybin=self.clu_ids, xlim=[0,
-                                                                                     duration])[0]
+            arr = bincount2D(spks, clu, xbin=self.binwidth, ybin=self.clu_ids, xlim=[0, duration])[
+                0
+            ]
             arrdiffs.append(arr.shape[1] - self.binf(duration))
             spkarrs.append(arr.T)
         y = np.vstack(spkarrs)
@@ -126,13 +130,13 @@ class EphysModel:
         """
         outputs = {}
         for var in self.design.covar.keys():
-            if self.design.covar[var]['bases'] is None:
-                wind = self.design.covar[var]['dmcol_idx']
+            if self.design.covar[var]["bases"] is None:
+                wind = self.design.covar[var]["dmcol_idx"]
                 outputs[var] = self.coefs.apply(lambda w: w[wind])
                 continue
-            winds = self.design.covar[var]['dmcol_idx']
-            bases = self.design.covar[var]['bases']
-            offset = self.design.covar[var]['offset']
+            winds = self.design.covar[var]["dmcol_idx"]
+            bases = self.design.covar[var]["bases"]
+            offset = self.design.covar[var]["offset"]
             tlen = bases.shape[0] * self.binwidth
             tstamps = np.linspace(0 + offset, tlen + offset, bases.shape[0])
             if peaksonly:
@@ -142,9 +146,9 @@ class EphysModel:
                 weights = self.coefs.apply(lambda w: w[winds] * peakvals)
             else:
                 weights = self.coefs.apply(lambda w: np.sum(w[winds] * bases, axis=1))
-            outputs[var] = pd.DataFrame(weights.values.tolist(),
-                                        index=weights.index,
-                                        columns=tstamps)
+            outputs[var] = pd.DataFrame(
+                weights.values.tolist(), index=weights.index, columns=tstamps
+            )
         self.combined_weights = outputs
         self.peaksonly_weights = peaksonly
         return outputs
@@ -154,24 +158,29 @@ class EphysModel:
         Score a single target y
         """
         pred = self.link(dm @ wt + bias).flatten()
-        if self.metric == 'dsq':
+        if self.metric == "dsq":
             null_pred = np.ones_like(pred) * np.mean(y)
             null_deviance = 2 * np.sum(xlogy(y, y / null_pred.flat) - y + null_pred.flat)
-            with np.errstate(invalid='ignore', divide='ignore'):
+            with np.errstate(invalid="ignore", divide="ignore"):
                 full_deviance = 2 * np.sum(xlogy(y, y / pred.flat) - y + pred.flat)
             return 1 - (full_deviance / null_deviance)
-        elif self.metric == 'msespike':
-            residuals = (y - pred)**2
+        elif self.metric == "msespike":
+            residuals = (y - pred) ** 2
             return residuals.sum() / y.sum()
-        elif self.metric == 'rsq':
+        elif self.metric == "rsq":
             return r2_score(y, pred)
-        elif self.metric == 'nllspike':
+        elif self.metric == "nllspike":
             biasdm = np.pad(dm, ((0, 0), (1, 0)), constant_values=1)
             return -neglog(np.vstack((bias, wt)).flatten(), biasdm, y) / np.sum(y)
         else:
-            raise AttributeError('No valid metric exists in the instance for use by _scorer()')
+            raise AttributeError("No valid metric exists in the instance for use by _scorer()")
 
-    def fit(self, train_idx: Optional[npt.ArrayLike] = None, printcond: bool = True):
+    def fit(
+        self,
+        train_idx: Optional[npt.ArrayLike] = None,
+        printcond: bool = True,
+        bestparams: bool = False,
+    ):
         """
         Fit the current set of binned spikes as a function of the current design matrix. Requires
         NeuralGLM.bin_spike_trains and NeuralGLM.compile_design_matrix to be run first. Will store
@@ -198,7 +207,9 @@ class EphysModel:
         if train_idx is None:
             train_idx = self.design.trialsdf.index
         if not np.all(np.isin(train_idx, self.design.trialsdf.index)):
-            raise IndexError('Not all train indices in the trials of design matrix')
+            raise IndexError("Not all train indices in the trials of design matrix")
+        if bestparams and not isinstance(self.estimator, MetaEstimatorMixin):
+            raise ValueError("bestparams is only valid when using GridSearchCV as the estimator")
 
         # Store training and test indices for self so that .score() method will know what to
         # operate on. If all data indices are in train indices, train and test are the same set.
@@ -212,10 +223,14 @@ class EphysModel:
         trainmask = np.isin(self.design.trlabels, train_idx).flatten()
         trainbinned = self.binnedspikes[trainmask]
         if printcond:
-            print(f'Condition of design matrix is {np.linalg.cond(self.design[trainmask])}')
+            print(f"Condition of design matrix is {np.linalg.cond(self.design[trainmask])}")
 
         traindm = self.design[trainmask]
-        coefs, intercepts, = self._fit(traindm, trainbinned)
+        if not bestparams:
+            coefs, intercepts, = self._fit(traindm, trainbinned)
+        else:
+            coefs, intercepts, alphas = self._fit(traindm, trainbinned, bestparams=bestparams)
+            self.alphas = alphas
         self.coefs, self.intercepts = coefs, intercepts
         return
 
@@ -228,14 +243,14 @@ class EphysModel:
         pandas.Series
             Score using chosen metric (defined at instantiation) for each unit fit by the model.
         """
-        if not hasattr(self, 'coefs'):
-            raise AttributeError('Model has not been fit yet.')
+        if not hasattr(self, "coefs"):
+            raise AttributeError("Model has not been fit yet.")
         if testinds is None:
             testinds = self.testinds
         testmask = np.isin(self.design.trlabels, testinds).flatten()
         dm, binned = self.design[testmask, :], self.binnedspikes[testmask]
 
-        scores = pd.Series(index=self.coefs.index, name='scores', dtype=np.float64)
+        scores = pd.Series(index=self.coefs.index, name="scores", dtype=np.float64)
         for cell in self.coefs.index:
             cell_idx = np.argwhere(self.clu_ids == cell)[0, 0]
             wt = self.coefs.loc[cell].reshape(-1, 1)

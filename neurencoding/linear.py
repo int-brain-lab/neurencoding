@@ -1,4 +1,8 @@
+# Standard library
+import logging
+
 # Third party libraries
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, MetaEstimatorMixin
@@ -6,6 +10,8 @@ from sklearn.linear_model import LinearRegression
 
 # Neurencoding repo imports
 from ._models import EphysModel
+
+_logger = logging.getLogger("neurencoding")
 
 
 class LinearGLM(EphysModel):
@@ -34,7 +40,7 @@ class LinearGLM(EphysModel):
             Length of the bins to be used to count spikes, by default 0.02
         metric : str, optional
             Scoring metric which to use for the models .score() method. Can be rsq, dsq, msepike,
-            by default 'rsq'
+            nllspike, by default 'rsq'
         estimator : sklearn.linear_model estimator, optional
             Estimator to use for model fitting. If None will default to pure linear regression.
             Must have a .fit(X, y) method and after fitting contain .coef_ and .intercept_
@@ -51,13 +57,14 @@ class LinearGLM(EphysModel):
         if estimator is None:
             estimator = LinearRegression()
         if not isinstance(estimator, BaseEstimator):
-            raise ValueError('Estimator must be a scikit-learn estimator, e.g. LinearRegression')
+            _logger.warn("Estimator is not a sklearn estimator, may not work as expected."
+                         " Trying anyway.")
         self.metric = metric
         self.estimator = estimator
         self.link = lambda x: x
         self.invlink = self.link
 
-    def _fit(self, dm, binned, cells=None):
+    def _fit(self, dm, binned, cells=None, bestparams=False):
         """
         Fitting primitive that brainbox.EphysModel.fit method will call
 
@@ -87,15 +94,21 @@ class LinearGLM(EphysModel):
 
         coefs = pd.Series(index=cells, name='coefficients', dtype=object)
         intercepts = pd.Series(index=cells, name='intercepts', dtype=np.float64)
+        if isinstance(self.estimator, MetaEstimatorMixin):
+            pars = pd.Series(index=cells, name='intercepts', dtype=np.float64)
 
-        lm = self.estimator.fit(dm, binned)
-        if isinstance(lm, MetaEstimatorMixin):
-            est = lm.best_estimator_
-            weight, intercept = est.coef_, est.intercept_
-        else:
-            weight, intercept = lm.coef_, lm.intercept_
         for cell in cells:
             cell_idx = np.argwhere(cells == cell)[0, 0]
-            coefs.at[cell] = weight[cell_idx, :]
-            intercepts.at[cell] = intercept[cell_idx]
+            lm = self.estimator.fit(dm, binned[:, cell_idx])
+            if isinstance(lm, MetaEstimatorMixin):
+                est = lm.best_estimator_
+                weight, intercept = est.coef_.copy(), est.intercept_
+                pars.loc[cell] = lm.best_params_["alpha"]
+                del est
+            else:
+                weight, intercept = lm.coef_.copy(), lm.intercept_
+            coefs.at[cell] = weight
+            intercepts.at[cell] = intercept
+        if bestparams:
+            return coefs, intercepts, pars
         return coefs, intercepts

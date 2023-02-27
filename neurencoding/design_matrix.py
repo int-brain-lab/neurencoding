@@ -353,11 +353,14 @@ class DesignMatrix:
         self._compile_check()
         # Test for mismatch in length of regressor vs trials
         mismatch = np.zeros(len(self.trialsdf.index), dtype=bool)
+        nans = np.zeros(self.trialsdf.index.max(), dtype=bool)
         for i in self.trialsdf.index:
             currtr = self.trialsdf.loc[i]
             nT = self.binf(currtr.duration)
             if regressor.loc[i].shape[0] != nT:
                 mismatch[i] = True
+            if np.any(np.isnan(regressor.loc[i])):
+                nans[i - 1] = True
 
         if np.any(mismatch):
             raise ValueError('Length mismatch between regressor and trial on trials'
@@ -373,6 +376,12 @@ class DesignMatrix:
                 cond = self.trialsdf.index[self.trialsdf.apply(cond, axis=1)]
         if not all(regressor.index == self.trialsdf.index):
             raise IndexError('Indices of regressor and trials dataframes do not match.')
+
+        nantrials = pd.Series({i: np.any(np.isnan(regressor.loc[i])) for i in self.trialsdf.index})
+        if cond is not None and np.any(nantrials.loc[cond]):
+            raise ValueError('NaNs in regressor on trials')
+        elif cond is None and np.any(nantrials):
+            raise ValueError('NaNs in regressor on trials')
 
         cov = {
             'description':

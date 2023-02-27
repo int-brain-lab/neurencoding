@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neurencoding"
-version = "0.1.6"
+version = "0.1.7"
 authors = [
     {name="Berk Gercek", email="berkgercek@duck.com"},
 ]
@@ -26,9 +26,9 @@ dependencies = [
     "pandas",
     "scikit-learn",
     "tqdm",
-    "joblib",
     "matplotlib",
     "seaborn",
+    "numba",
 ]
 
 [project.urls]
