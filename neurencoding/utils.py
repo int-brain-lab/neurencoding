@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from numpy.matlib import repmat
 from tqdm import tqdm
+from copy import deepcopy
 
 
 def raised_cosine(duration, nbases, binfun):
@@ -133,6 +134,44 @@ def bincount2D(x, y, xbin=0, ybin=0, xlim=None, ylim=None, weights=None):
         yscale = ybin
 
     return r, xscale, yscale
+
+
+def remove_regressors(design, regressors):
+    """
+    Removes regressors from a design matrix, and reindexes the remaining regressors.
+    Then compiles the resulting modified DM. Useful for doing testing.
+
+
+    Parameters
+    ----------
+    design : neurencoding.DesignMatrix
+        Original design matrix to modify. Must have every element of `regressors` in the
+        `covar` attribute.
+    regressors : list
+        List of string keys to remove from the design matrix.
+
+    Returns
+    -------
+    neurencoding.DesignMatrix
+        Compiled design matrix with the specified regressors removed.
+    """
+    newd = deepcopy(design)
+    newcol_max = 0
+    dkeys = list(newd.covar.keys())
+    for r in dkeys:
+        bases = newd.covar[r]["bases"]
+        if r in regressors:
+            del newd.covar[r]
+            continue
+        if bases is not None:
+            newd.covar[r]["dmcol_idx"] = np.arange(newcol_max, newcol_max + bases.shape[1])
+            newcol_max += bases.shape[1]
+        else:
+            newd.covar[r]["dmcol_idx"] = newcol_max
+            newcol_max += 1
+    newd.currcol = newcol_max
+    newd.compile_design_matrix()
+    return newd
 
 
 class SequentialSelector:
